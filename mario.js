@@ -1,129 +1,127 @@
-// Musique
+// Musique du jeu
 const bgMusic = new Audio("mario_theme.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
 
-document.addEventListener("click", () => { if (bgMusic.paused) bgMusic.play(); }, { once: true });
-document.addEventListener("touchstart", () => { if (bgMusic.paused) bgMusic.play(); }, { once: true });
+// Activer la musique au premier clic ou touch
+document.addEventListener("click", () => {
+  if (bgMusic.paused) bgMusic.play().catch(e => console.log("Erreur musique :", e));
+}, { once: true });
+
+document.addEventListener("touchstart", () => {
+  if (bgMusic.paused) bgMusic.play().catch(e => console.log("Erreur musique tactile :", e));
+}, { once: true });
 
 // Canvas
 const canvas = document.getElementById('gameCanvas');
+if (!canvas) {
+  alert("Erreur : canvas introuvable !");
+  throw new Error("Canvas manquant");
+}
 const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 400;
 
-let gameMode = 'main';
+// Variables du jeu
 let cameraX = 0;
-let velocityY = 0;
-let isJumping = false;
-let moveLeft = false, moveRight = false;
+let gameMode = 'main';
 let projectiles = [];
 
 const backgroundImg = new Image();
 backgroundImg.src = "background.png";
+backgroundImg.onerror = () => console.log("Erreur : background.png manquant");
 
 const marioImg = new Image();
 marioImg.src = "mario.png";
+marioImg.onerror = () => console.log("Erreur : mario.png manquant");
 
 const sol = {
   main: { x: 0, y: canvas.height - 50, width: 5000, height: 50 },
-  secret: { x: 0, y: canvas.height - 30, width: 3000, height: 30, background: "#1a1a1a" }
+  secret: { x: 0, y: canvas.height - 30, width: 3000, height: 30, background: '#1a1a1a' }
 };
 
 const mario = {
-  x: 50, y: sol.main.y - 70,
-  width: 80, height: 70,
+  x: 50,
+  y: sol.main.y - 70,
+  width: 80,
+  height: 70,
+  color: "red",
   direction: 'right'
 };
 
-const pipes = [
-  { x: 600, y: sol.main.y - 80, width: 60, height: 80, color: "green", target: "secret" },
-  { x: 2000, y: sol.main.y - 100, width: 60, height: 100, color: "green", target: "secret" },
-  { x: 100, y: sol.secret.y - 80, width: 60, height: 80, color: "green", target: "main" }
-];
+let speed = 4, gravity = 1, velocityY = 0, isJumping = false;
+let moveLeft = false, moveRight = false;
 
-function drawSol() {
-  const s = sol[gameMode];
+// Contrôles tactiles
+const leftBtn = document.getElementById("btn-left");
+const rightBtn = document.getElementById("btn-right");
+const upBtn = document.getElementById("btn-up");
+const downBtn = document.getElementById("btn-down");
 
-  if (gameMode === 'main' && backgroundImg.complete) {
-    const imgWidth = backgroundImg.width;
-    for (let x = Math.floor(cameraX / imgWidth) * imgWidth; x < cameraX + canvas.width; x += imgWidth) {
-      ctx.drawImage(backgroundImg, x - cameraX, 0, imgWidth, canvas.height);
+if (leftBtn && rightBtn && upBtn && downBtn) {
+  leftBtn.addEventListener("touchstart", () => {
+    moveLeft = true;
+    mario.direction = 'left';
+  });
+  leftBtn.addEventListener("touchend", () => moveLeft = false);
+
+  rightBtn.addEventListener("touchstart", () => {
+    moveRight = true;
+    mario.direction = 'right';
+  });
+  rightBtn.addEventListener("touchend", () => moveRight = false);
+
+  upBtn.addEventListener("touchstart", () => {
+    if (!isJumping) {
+      velocityY = -15;
+      isJumping = true;
     }
-  } else {
-    ctx.fillStyle = s.background;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  });
+
+  downBtn.addEventListener("touchstart", () => enterOrExitPipe());
+}
+
+// Contrôles clavier
+document.addEventListener("keydown", (e) => {
+  switch (e.key) {
+    case "ArrowLeft":
+      moveLeft = true;
+      mario.direction = 'left';
+      break;
+    case "ArrowRight":
+      moveRight = true;
+      mario.direction = 'right';
+      break;
+    case "ArrowUp":
+      if (!isJumping) {
+        velocityY = -15;
+        isJumping = true;
+      }
+      break;
+    case "ArrowDown":
+      enterOrExitPipe();
+      break;
+    case " ": // espace
+      fireProjectile();
+      break;
   }
+});
 
-  ctx.fillStyle = "green";
-  ctx.fillRect(s.x - cameraX, s.y, s.width, s.height);
-}
+document.addEventListener("keyup", (e) => {
+  if (e.key === "ArrowLeft") moveLeft = false;
+  if (e.key === "ArrowRight") moveRight = false;
+});
 
-function drawPipes() {
-  pipes.forEach(pipe => {
-    ctx.fillStyle = pipe.color;
-    ctx.fillRect(pipe.x - cameraX, pipe.y, pipe.width, pipe.height);
-  });
-}
-
-function drawMario() {
-  ctx.save();
-  ctx.translate(mario.x - cameraX + mario.width / 2, mario.y + mario.height / 2);
-  ctx.scale(mario.direction === 'left' ? -1 : 1, 1);
-  ctx.drawImage(marioImg, -mario.width / 2, -mario.height / 2, mario.width, mario.height);
-  ctx.restore();
-}
-
-function drawProjectiles() {
-  projectiles.forEach((p, i) => {
-    p.x += p.speed;
-    ctx.beginPath();
-    ctx.arc(p.x - cameraX, p.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "orange";
-    ctx.fill();
-
-    if (p.x < cameraX - 50 || p.x > cameraX + canvas.width + 50) {
-      projectiles.splice(i, 1);
-    }
-  });
-}
-
-function fireProjectile() {
-  const direction = mario.direction === 'left' ? -1 : 1;
-  projectiles.push({
-    x: mario.x + mario.width / 2,
-    y: mario.y + mario.height / 2,
-    speed: 8 * direction
-  });
-}
-
-function checkCollision(a, b) {
-  return a.x < b.x + b.width &&
-         a.x + a.width > b.x &&
-         a.y < b.y + b.height &&
-         a.y + a.height > b.y;
-}
-
-function enterOrExitPipe() {
-  const currentPipes = pipes.filter(p => p.target !== gameMode);
-  const marioBox = { x: mario.x, y: mario.y, width: mario.width, height: mario.height };
-
-  currentPipes.forEach(pipe => {
-    if (checkCollision(marioBox, pipe)) {
-      gameMode = pipe.target;
-      mario.y = sol[gameMode].y - mario.height;
-    }
-  });
-}
-
-// Boucle principale
+// Boucle principale du jeu
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (moveLeft) { mario.x -= 4; mario.direction = 'left'; }
-  if (moveRight) { mario.x += 4; mario.direction = 'right'; }
+  // Mouvements
+  if (moveLeft && mario.x > 0) mario.x -= speed;
+  if (moveRight) mario.x += speed;
 
-  velocityY += 1;
+  // Saut / gravité
+  velocityY += gravity;
   mario.y += velocityY;
 
   const s = sol[gameMode];
@@ -133,66 +131,91 @@ function gameLoop() {
     isJumping = false;
   }
 
+  // Caméra
   cameraX = mario.x - canvas.width / 2;
   if (cameraX < 0) cameraX = 0;
 
   drawSol();
-  drawPipes();
   drawMario();
   drawProjectiles();
 
   requestAnimationFrame(gameLoop);
 }
 
-// Contrôles clavier
-document.addEventListener("keydown", (e) => {
-  switch (e.key) {
-    case "ArrowLeft": moveLeft = true; break;
-    case "ArrowRight": moveRight = true; break;
-    case "ArrowUp":
-      if (!isJumping) {
-        velocityY = -15;
-        isJumping = true;
-      }
-      break;
-    case "ArrowDown": enterOrExitPipe(); break;
-    case " ": fireProjectile(); break;
+// Dessiner le sol et le fond
+function drawSol() {
+  const s = sol[gameMode];
+
+  if (gameMode === 'main' && backgroundImg.complete) {
+    const imgWidth = backgroundImg.width;
+    for (let x = Math.floor(cameraX / imgWidth) * imgWidth; x < cameraX + canvas.width; x += imgWidth) {
+      ctx.drawImage(backgroundImg, x - cameraX, 0, imgWidth, canvas.height);
+    }
+  } else {
+    ctx.fillStyle = s.background || 'lightblue';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-});
 
-document.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowLeft") moveLeft = false;
-  if (e.key === "ArrowRight") moveRight = false;
-});
-
-// Contrôles tactiles
-const leftBtn = document.getElementById("btn-left");
-const rightBtn = document.getElementById("btn-right");
-const upBtn = document.getElementById("btn-up");
-const downBtn = document.getElementById("btn-down");
-
-if (leftBtn) {
-  leftBtn.addEventListener("touchstart", () => moveLeft = true);
-  leftBtn.addEventListener("touchend", () => moveLeft = false);
+  ctx.fillStyle = "green";
+  ctx.fillRect(s.x - cameraX, s.y, s.width, s.height);
 }
-if (rightBtn) {
-  rightBtn.addEventListener("touchstart", () => moveRight = true);
-  rightBtn.addEventListener("touchend", () => moveRight = false);
+
+// Dessiner Mario
+function drawMario() {
+  ctx.save();
+  ctx.translate(mario.x - cameraX + mario.width / 2, mario.y + mario.height / 2);
+  ctx.scale(mario.direction === 'left' ? -1 : 1, 1);
+  ctx.drawImage(marioImg, -mario.width / 2, -mario.height / 2, mario.width, mario.height);
+  ctx.restore();
 }
-if (upBtn) {
-  upBtn.addEventListener("touchstart", () => {
-    if (!isJumping) {
-      velocityY = -15;
-      isJumping = true;
+
+// Dessiner les projectiles
+function drawProjectiles() {
+  projectiles.forEach((p, index) => {
+    p.x += p.speed;
+
+    ctx.beginPath();
+    ctx.arc(p.x - cameraX, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = "orange";
+    ctx.fill();
+
+    if (p.x < cameraX - 50 || p.x > cameraX + canvas.width + 50) {
+      projectiles.splice(index, 1);
     }
   });
 }
-if (downBtn) {
-  downBtn.addEventListener("touchstart", () => enterOrExitPipe());
+
+// Tirer un projectile
+function fireProjectile() {
+  const direction = mario.direction === 'left' ? -1 : 1;
+  projectiles.push({
+    x: mario.x + mario.width / 2,
+    y: mario.y + mario.height / 2,
+    speed: 8 * direction
+  });
 }
 
-// Lancer le jeu
+// Entrer dans un toboggan (à personnaliser)
+function enterOrExitPipe() {
+  console.log("Entrée ou sortie de toboggan !");
+}
+
+// Lancer le jeu quand l’image de Mario est chargée
 marioImg.onload = () => {
   gameLoop();
-  bgMusic.play().catch(e => console.log("Son bloqué par le navigateur"));
+  bgMusic.play().catch(e => console.log("Lecture musique refusée :", e));
 };
+
+// Plein écran si en paysage
+function requestFullscreenOnLandscape() {
+  if (window.innerWidth > window.innerHeight) {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+  }
+}
+
+window.addEventListener('orientationchange', () => {
+  setTimeout(requestFullscreenOnLandscape, 500);
+});

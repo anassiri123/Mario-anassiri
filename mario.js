@@ -92,12 +92,22 @@ function drawProjectiles() {
   projectiles.forEach((p, index) => {
     p.x += p.speed;
 
+    // Style flamme avec dégradé rouge/orange/jaune
+    const gradient = ctx.createRadialGradient(
+      p.x - cameraX, p.y, 5,
+      p.x - cameraX, p.y, 20
+    );
+    gradient.addColorStop(0, "yellow");
+    gradient.addColorStop(0.5, "orange");
+    gradient.addColorStop(1, "red");
+
     ctx.beginPath();
-    ctx.arc(p.x - cameraX, p.y, 15, 0, Math.PI * 2);
-    ctx.fillStyle = "orange";
+    ctx.arc(p.x - cameraX, p.y, 15, 0, Math.PI * 2); // rayon 15 = gros feu
+    ctx.fillStyle = gradient;
     ctx.fill();
 
-    if (p.x < cameraX - 50 || p.x > cameraX + canvas.width + 50) {
+    // Supprimer si hors écran
+    if (p.x < cameraX - 100 || p.x > cameraX + canvas.width + 100) {
       projectiles.splice(index, 1);
     }
   });

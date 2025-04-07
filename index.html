@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Mario</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Balise audio visible ou non, mais sans autoplay -->
+  <audio id="bgMusic" src="mario_theme.mp3" loop></audio>
+
+  <!-- Canvas du jeu -->
+  <canvas id="gameCanvas"></canvas>
+
+ <!-- <div class="image-zone">
+  <img src="background.png" alt="Ennemi Mario">
+</div> -->
+
+  <!-- Contrôles -->
+  <div class="controls">
+    <button class="btn" id="btn-left">◀</button>
+    <button class="btn" id="btn-up">▲</button>
+    <button class="btn" id="btn-right">▶</button>
+    <button class="btn" id="btn-down">▼</button>
+  </div>
+
+  <script src="mario.js"></script>
+</body>
+</html>

@@ -57,11 +57,7 @@ const leftBtn = document.getElementById("btn-left");
 const rightBtn = document.getElementById("btn-right");
 const upBtn = document.getElementById("btn-up");
 const downBtn = document.getElementById("btn-down");
-// Bouton tactile pour tirer
-const fireBtn = document.getElementById("btn-fire");
-if (fireBtn) {
-  fireBtn.addEventListener("touchstart", () => fireProjectile());
-}
+
 
 if (leftBtn && rightBtn && upBtn && downBtn) {
   leftBtn.addEventListener("touchstart", () => {
@@ -224,3 +220,52 @@ function requestFullscreenOnLandscape() {
 window.addEventListener('orientationchange', () => {
   setTimeout(requestFullscreenOnLandscape, 500);
 });
+
+// Tirer un projectile
+function fireProjectile() {
+  const direction = mario.direction === 'left' ? -1 : 1;
+  projectiles.push({
+    x: mario.x + mario.width / 2,
+    y: mario.y + mario.height / 2,
+    speed: 8 * direction
+  });
+}
+
+// Entrer dans un toboggan (à personnaliser)
+function enterOrExitPipe() {
+  console.log("Entrée ou sortie de toboggan !");
+}
+
+// Lancer le jeu quand l’image de Mario est chargée
+marioImg.onload = () => {
+  gameLoop();
+  bgMusic.play().catch(e => console.log("Lecture musique refusée :", e));
+};
+
+// Plein écran si en paysage
+function requestFullscreenOnLandscape() {
+  if (window.innerWidth > window.innerHeight) {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+  }
+}
+
+window.addEventListener('orientationchange', () => {
+  setTimeout(requestFullscreenOnLandscape, 500);
+});
+
+// ✅ Bouton tactile pour tirer le projectile
+const fireBtn = document.getElementById("btn-fire");
+if (fireBtn) {
+  fireBtn.addEventListener("touchstart", (e) => {
+    e.preventDefault(); // empêche le zoom ou scroll
+    fireProjectile();
+  });
+
+  fireBtn.addEventListener("click", (e) => {
+    e.preventDefault(); // pour le clic sur PC aussi
+    fireProjectile();
+  });
+}

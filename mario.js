@@ -93,7 +93,7 @@ function drawProjectiles() {
     p.x += p.speed;
 
     ctx.beginPath();
-    ctx.arc(p.x - cameraX, p.y, 5, 0, Math.PI * 2);
+    ctx.arc(p.x - cameraX, p.y, 15, 0, Math.PI * 2);
     ctx.fillStyle = "orange";
     ctx.fill();
 

@@ -48,11 +48,24 @@ const mario = {
   direction: 'right'
 };
 
-// Toboggans verts
+// Toboggans (tuyaux verts)
 const pipes = [
   { x: 600, y: sol.main.y - 80, width: 60, height: 80, color: "green", target: "secret" },
   { x: 2000, y: sol.main.y - 100, width: 60, height: 100, color: "green", target: "secret" },
   { x: 100, y: sol.secret.y - 80, width: 60, height: 80, color: "green", target: "main" }
+];
+
+// Blocs surprises pour l'aventure
+const blocks = [
+  { x: 300, y: sol.main.y - 100, width: 50, height: 50, type: "?" },
+  { x: 500, y: sol.main.y - 100, width: 50, height: 50, type: "solid" },
+  { x: 800, y: sol.main.y - 150, width: 50, height: 50, type: "?" },
+  { x: 1200, y: sol.main.y - 120, width: 50, height: 50, type: "solid" },
+  { x: 1500, y: sol.main.y - 80, width: 50, height: 50, type: "?" },
+  { x: 1800, y: sol.main.y - 130, width: 50, height: 50, type: "solid" },
+  { x: 2100, y: sol.main.y - 100, width: 50, height: 50, type: "?" },
+  { x: 2400, y: sol.main.y - 150, width: 50, height: 50, type: "solid" },
+  { x: 2700, y: sol.main.y - 180, width: 50, height: 50, type: "?" }
 ];
 
 // Fonctions de dessin
@@ -80,6 +93,20 @@ function drawPipes() {
   });
 }
 
+function drawBlocks() {
+  blocks.forEach(block => {
+    const x = block.x - cameraX;
+    ctx.fillStyle = block.type === "?" ? "orange" : "saddlebrown";
+    ctx.fillRect(x, block.y, block.width, block.height);
+
+    if (block.type === "?") {
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.fillText("?", x + 15, block.y + 30);
+    }
+  });
+}
+
 function drawMario() {
   ctx.save();
   ctx.translate(mario.x - cameraX + mario.width / 2, mario.y + mario.height / 2);
@@ -92,7 +119,6 @@ function drawProjectiles() {
   projectiles.forEach((p, index) => {
     p.x += p.speed;
 
-    // Style flamme avec dégradé rouge/orange/jaune
     const gradient = ctx.createRadialGradient(
       p.x - cameraX, p.y, 5,
       p.x - cameraX, p.y, 20
@@ -102,18 +128,17 @@ function drawProjectiles() {
     gradient.addColorStop(1, "red");
 
     ctx.beginPath();
-    ctx.arc(p.x - cameraX, p.y, 15, 0, Math.PI * 2); // rayon 15 = gros feu
+    ctx.arc(p.x - cameraX, p.y, 15, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Supprimer si hors écran
     if (p.x < cameraX - 100 || p.x > cameraX + canvas.width + 100) {
       projectiles.splice(index, 1);
     }
   });
 }
 
-// Fonctions principales
+// Feu
 function fireProjectile() {
   const direction = mario.direction === 'left' ? -1 : 1;
   projectiles.push({
@@ -123,6 +148,7 @@ function fireProjectile() {
   });
 }
 
+// Tuyau (pipe)
 function checkCollision(a, b) {
   return a.x < b.x + b.width &&
          a.x + a.width > b.x &&
@@ -132,13 +158,7 @@ function checkCollision(a, b) {
 
 function enterOrExitPipe() {
   const currentPipes = pipes.filter(p => p.target !== gameMode);
-  const marioBox = {
-    x: mario.x,
-    y: mario.y,
-    width: mario.width,
-    height: mario.height
-  };
-
+  const marioBox = { x: mario.x, y: mario.y, width: mario.width, height: mario.height };
   currentPipes.forEach(pipe => {
     if (checkCollision(marioBox, pipe)) {
       gameMode = pipe.target;
@@ -160,7 +180,6 @@ function gameLoop() {
     mario.direction = 'right';
   }
 
-  // Gravité
   velocityY += 1;
   mario.y += velocityY;
 
@@ -171,11 +190,11 @@ function gameLoop() {
     isJumping = false;
   }
 
-  // Caméra
   cameraX = mario.x - canvas.width / 2;
   if (cameraX < 0) cameraX = 0;
 
   drawSol();
+  drawBlocks();
   drawPipes();
   drawMario();
   drawProjectiles();
@@ -186,29 +205,18 @@ function gameLoop() {
 // Contrôles clavier
 document.addEventListener("keydown", (e) => {
   switch (e.key) {
-    case "ArrowLeft":
-      moveLeft = true;
-      mario.direction = 'left';
-      break;
-    case "ArrowRight":
-      moveRight = true;
-      mario.direction = 'right';
-      break;
+    case "ArrowLeft": moveLeft = true; mario.direction = 'left'; break;
+    case "ArrowRight": moveRight = true; mario.direction = 'right'; break;
     case "ArrowUp":
       if (!isJumping) {
         velocityY = -15;
         isJumping = true;
       }
       break;
-    case "ArrowDown":
-      enterOrExitPipe();
-      break;
-    case " ":
-      fireProjectile();
-      break;
+    case "ArrowDown": enterOrExitPipe(); break;
+    case " ": fireProjectile(); break;
   }
 });
-
 document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft") moveLeft = false;
   if (e.key === "ArrowRight") moveRight = false;
@@ -222,17 +230,11 @@ const downBtn = document.getElementById("btn-down");
 const fireBtn = document.getElementById("btn-fire");
 
 if (leftBtn) {
-  leftBtn.addEventListener("touchstart", () => {
-    moveLeft = true;
-    mario.direction = 'left';
-  });
+  leftBtn.addEventListener("touchstart", () => { moveLeft = true; mario.direction = 'left'; });
   leftBtn.addEventListener("touchend", () => moveLeft = false);
 }
 if (rightBtn) {
-  rightBtn.addEventListener("touchstart", () => {
-    moveRight = true;
-    mario.direction = 'right';
-  });
+  rightBtn.addEventListener("touchstart", () => { moveRight = true; mario.direction = 'right'; });
   rightBtn.addEventListener("touchend", () => moveRight = false);
 }
 if (upBtn) {
@@ -247,14 +249,8 @@ if (downBtn) {
   downBtn.addEventListener("touchstart", () => enterOrExitPipe());
 }
 if (fireBtn) {
-  fireBtn.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    fireProjectile();
-  });
-  fireBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    fireProjectile();
-  });
+  fireBtn.addEventListener("touchstart", (e) => { e.preventDefault(); fireProjectile(); });
+  fireBtn.addEventListener("click", (e) => { e.preventDefault(); fireProjectile(); });
 }
 
 // Lancement du jeu

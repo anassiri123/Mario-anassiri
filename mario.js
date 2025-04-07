@@ -57,6 +57,11 @@ const leftBtn = document.getElementById("btn-left");
 const rightBtn = document.getElementById("btn-right");
 const upBtn = document.getElementById("btn-up");
 const downBtn = document.getElementById("btn-down");
+// Bouton tactile pour tirer
+const fireBtn = document.getElementById("btn-fire");
+if (fireBtn) {
+  fireBtn.addEventListener("touchstart", () => fireProjectile());
+}
 
 if (leftBtn && rightBtn && upBtn && downBtn) {
   leftBtn.addEventListener("touchstart", () => {

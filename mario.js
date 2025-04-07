@@ -3,13 +3,8 @@ const bgMusic = new Audio("mario_theme.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
 
-document.addEventListener("click", () => {
-  if (bgMusic.paused) bgMusic.play();
-}, { once: true });
-
-document.addEventListener("touchstart", () => {
-  if (bgMusic.paused) bgMusic.play();
-}, { once: true });
+document.addEventListener("click", () => { if (bgMusic.paused) bgMusic.play(); }, { once: true });
+document.addEventListener("touchstart", () => { if (bgMusic.paused) bgMusic.play(); }, { once: true });
 
 // Canvas
 const canvas = document.getElementById('gameCanvas');
@@ -17,7 +12,6 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 400;
 
-// Variables principales
 let gameMode = 'main';
 let cameraX = 0;
 let velocityY = 0;
@@ -25,43 +19,29 @@ let isJumping = false;
 let moveLeft = false, moveRight = false;
 let projectiles = [];
 
-// Déclaration de la structure du sol (doit être AVANT pipes et blocks)
-const sol = {
-  main: { x: 0, y: canvas.height - 50, width: 5000, height: 50 },
-  secret: { x: 0, y: canvas.height - 30, width: 3000, height: 30, background: "#1a1a1a" }
-};
-
-// Toboggans verts
-const pipes = [
-  { x: 600, y: sol.main.y - 80, width: 60, height: 80, color: "green", target: "secret" },
-  { x: 2000, y: sol.main.y - 100, width: 60, height: 100, color: "green", target: "secret" },
-  { x: 100, y: sol.secret.y - 80, width: 60, height: 80, color: "green", target: "main" }
-];
-
-// Blocs solides et bonus
-const blocks = [
-  { x: 300, y: sol.main.y - 100, width: 50, height: 50, type: "solid" },
-  { x: 400, y: sol.main.y - 100, width: 50, height: 50, type: "?" },
-  { x: 500, y: sol.main.y - 100, width: 50, height: 50, type: "solid" },
-  { x: 800, y: sol.main.y - 150, width: 50, height: 50, type: "solid" },
-  { x: 1000, y: sol.main.y - 80, width: 50, height: 50, type: "?" }
-];
-
-// Images
 const backgroundImg = new Image();
 backgroundImg.src = "background.png";
 
 const marioImg = new Image();
 marioImg.src = "mario.png";
 
-// Mario
+const sol = {
+  main: { x: 0, y: canvas.height - 50, width: 5000, height: 50 },
+  secret: { x: 0, y: canvas.height - 30, width: 3000, height: 30, background: "#1a1a1a" }
+};
+
 const mario = {
   x: 50, y: sol.main.y - 70,
   width: 80, height: 70,
   direction: 'right'
 };
 
-// FONCTIONS DE DESSIN
+const pipes = [
+  { x: 600, y: sol.main.y - 80, width: 60, height: 80, color: "green", target: "secret" },
+  { x: 2000, y: sol.main.y - 100, width: 60, height: 100, color: "green", target: "secret" },
+  { x: 100, y: sol.secret.y - 80, width: 60, height: 80, color: "green", target: "main" }
+];
+
 function drawSol() {
   const s = sol[gameMode];
 
@@ -83,20 +63,6 @@ function drawPipes() {
   pipes.forEach(pipe => {
     ctx.fillStyle = pipe.color;
     ctx.fillRect(pipe.x - cameraX, pipe.y, pipe.width, pipe.height);
-  });
-}
-
-function drawBlocks() {
-  blocks.forEach(block => {
-    const x = block.x - cameraX;
-    ctx.fillStyle = (block.type === "?") ? "orange" : "saddlebrown";
-    ctx.fillRect(x, block.y, block.width, block.height);
-
-    if (block.type === "?") {
-      ctx.fillStyle = "white";
-      ctx.font = "20px Arial";
-      ctx.fillText("?", x + 15, block.y + 30);
-    }
   });
 }
 
@@ -122,7 +88,6 @@ function drawProjectiles() {
   });
 }
 
-// AUTRES FONCTIONS
 function fireProjectile() {
   const direction = mario.direction === 'left' ? -1 : 1;
   projectiles.push({
@@ -151,7 +116,7 @@ function enterOrExitPipe() {
   });
 }
 
-// BOUCLE DU JEU
+// Boucle principale
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -161,21 +126,6 @@ function gameLoop() {
   velocityY += 1;
   mario.y += velocityY;
 
-  // Collision avec les blocs
-  blocks.forEach(block => {
-    if (
-      mario.x + mario.width > block.x &&
-      mario.x < block.x + block.width &&
-      mario.y + mario.height > block.y &&
-      mario.y + mario.height < block.y + 20
-    ) {
-      mario.y = block.y - mario.height;
-      velocityY = 0;
-      isJumping = false;
-    }
-  });
-
-  // Collision avec le sol
   const s = sol[gameMode];
   if (mario.y + mario.height > s.y) {
     mario.y = s.y - mario.height;
@@ -188,14 +138,13 @@ function gameLoop() {
 
   drawSol();
   drawPipes();
-  drawBlocks();
   drawMario();
   drawProjectiles();
 
   requestAnimationFrame(gameLoop);
 }
 
-// CONTRÔLES CLAVIER
+// Contrôles clavier
 document.addEventListener("keydown", (e) => {
   switch (e.key) {
     case "ArrowLeft": moveLeft = true; break;
@@ -216,7 +165,7 @@ document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowRight") moveRight = false;
 });
 
-// CONTRÔLES MOBILE
+// Contrôles tactiles
 const leftBtn = document.getElementById("btn-left");
 const rightBtn = document.getElementById("btn-right");
 const upBtn = document.getElementById("btn-up");
@@ -242,8 +191,8 @@ if (downBtn) {
   downBtn.addEventListener("touchstart", () => enterOrExitPipe());
 }
 
-// Lancer le jeu après chargement de Mario
+// Lancer le jeu
 marioImg.onload = () => {
   gameLoop();
-  bgMusic.play().catch(e => console.log("Musique bloquée :", e));
+  bgMusic.play().catch(e => console.log("Son bloqué par le navigateur"));
 };
